@@ -1,6 +1,7 @@
 library(dplyr)
 library(ggplot2)
 library(tidyr)
+library(tidyverse)
 
 data_raw <- read.csv("./data/time_series_covid19_confirmed_global.csv")
 
@@ -29,12 +30,18 @@ data_cleaned$Long <- country_coordinates$Long
 data_countries <- data_cleaned[, 1:3]
 
 data_cases <- data_cleaned[, c(1,4:ncol(data_cleaned))] %>%
-   tidyr::gather(key = "Date", value = "Cases", -Country.Region)
+   tidyr::gather(key = "Date", value = "Cases.Total", -Country.Region) %>%
+   dplyr::mutate(Date=as.Date(Date, format="X%m.%d.%y")) %>%
+   dplyr::group_by(Country.Region) %>%
+   dplyr::group_split() %>%
+   setNames(data_countries$Country.Region)
+
+a <- data_cases[["Albania"]] %>% add_column(Add_Column = 1)
 
 # plot example
-ggplot(data=data_cases[data_cases$Country.Region=="Switzerland",], 
-       aes(x=c(1:nrow(ch)), y=Cases)) +
-   geom_line()
+# ggplot(data=data_cases[data_cases$Country.Region=="Switzerland",], 
+#        aes(x=c(1:nrow(ch)), y=Cases)) +
+#    geom_line()
 
 # clean up main memory
 rm(list=setdiff(ls(), c("data_countries", "data_cases")))
