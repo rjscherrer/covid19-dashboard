@@ -26,17 +26,27 @@ data_cleaned <- aggregate(. ~ Country.Region, data_cleaned, sum)
 data_cleaned$Lat <- country_coordinates$Lat
 data_cleaned$Long <- country_coordinates$Long
 
+# add row for europe
+data_cleaned[nrow(data_cleaned)+1, ] <- NA
+data_cleaned[nrow(data_cleaned), 1] <- "Europe"
+data_cleaned[nrow(data_cleaned), 
+             4:ncol(data_cleaned)] <- colSums(data_cleaned[4:ncol(data_cleaned)], 
+                                              na.rm=TRUE)
+
+# sort by region
+data_cleaned <- data_cleaned[order(data_cleaned[,1]),]
+
 # separate data for easier processing
 data_countries <- data_cleaned[, 1:3]
 
-data_cases <- data_cleaned[, c(1,4:ncol(data_cleaned))] %>%
+data_cleaned <- data_cleaned[, c(1,4:ncol(data_cleaned))] %>%
    tidyr::gather(key = "Date", value = "Cases.Total", -Country.Region) %>%
    dplyr::mutate(Date=as.Date(Date, format="X%m.%d.%y")) %>%
    dplyr::group_by(Country.Region) %>%
    dplyr::group_split() %>%
    setNames(data_countries$Country.Region)
 
-a <- data_cases[["Albania"]] %>% add_column(Add_Column = 1)
+# a <- data_cases[["Albania"]] %>% add_column(Add_Column = 1)
 
 # plot example
 # ggplot(data=data_cases[data_cases$Country.Region=="Switzerland",], 
@@ -44,4 +54,4 @@ a <- data_cases[["Albania"]] %>% add_column(Add_Column = 1)
 #    geom_line()
 
 # clean up main memory
-rm(list=setdiff(ls(), c("data_countries", "data_cases")))
+rm(list=setdiff(ls(), c("data_cleaned")))
