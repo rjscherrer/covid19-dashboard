@@ -4,6 +4,7 @@ library(tidyr)
 library(tidyverse)
 
 data_raw <- read.csv("./data/time_series_covid19_confirmed_global.csv")
+data_iso <- read.csv("./data/iso_codes.csv")
 
 # filter for european countries
 european_countries <- c("Russia", "Germany", "United Kingdom", "France", "Italy", 
@@ -17,41 +18,45 @@ european_countries <- c("Russia", "Germany", "United Kingdom", "France", "Italy"
                         "Malta", "Iceland", "Andorra", "Monaco", "Liechtenstein",
                         "San Marino", "Holy See")
 
-data_cleaned <- data_raw[data_raw$Country.Region %in% european_countries,]
+data_cases <- data_raw[data_raw$Country.Region %in% european_countries,]
 
 # aggregate provinces
-country_coordinates <- data_cleaned[data_cleaned$Province.State=="",]
-data_cleaned <- data_cleaned %>% select(-Province.State)  
-data_cleaned <- aggregate(. ~ Country.Region, data_cleaned, sum)
-data_cleaned$Lat <- country_coordinates$Lat
-data_cleaned$Long <- country_coordinates$Long
+country_coordinates <- data_cases[data_cases$Province.State=="",]
+data_cases <- data_cases %>% select(-Province.State)  
+data_cases <- aggregate(. ~ Country.Region, data_cases, sum)
+data_cases$Lat <- country_coordinates$Lat
+data_cases$Long <- country_coordinates$Long
 
 # add row for europe
-data_cleaned[nrow(data_cleaned)+1, ] <- NA
-data_cleaned[nrow(data_cleaned), 1] <- "Europe"
-data_cleaned[nrow(data_cleaned), 
-             4:ncol(data_cleaned)] <- colSums(data_cleaned[4:ncol(data_cleaned)], 
+data_cases[nrow(data_cases)+1, ] <- NA
+data_cases[nrow(data_cases), 1] <- "Europe"
+data_cases[nrow(data_cases), 
+             4:ncol(data_cases)] <- colSums(data_cases[4:ncol(data_cases)], 
                                               na.rm=TRUE)
 
 # sort by region
-data_cleaned <- data_cleaned[order(data_cleaned[,1]),]
+data_cases <- data_cases[order(data_cases[,1]),]
 
 # separate data for easier processing
-data_countries <- data_cleaned[, 1:3]
+data_countries <- data_cases[, 1:3] %>%
+   merge(., data_iso, by = "Country.Region", all.x = TRUE)
 
-data_cleaned <- data_cleaned[, c(1,4:ncol(data_cleaned))] %>%
+data_cases <- data_cases[, c(1,4:ncol(data_cases))] %>%
    tidyr::gather(key = "Date", value = "Cases.Total", -Country.Region) %>%
    dplyr::mutate(Date=as.Date(Date, format="X%m.%d.%y")) %>%
    dplyr::group_by(Country.Region) %>%
    dplyr::group_split() %>%
+   as.list() %>%
    setNames(data_countries$Country.Region)
 
-# a <- data_cases[["Albania"]] %>% add_column(Add_Column = 1)
+# add column containing new cases
+for (i in c(1:length(data_cases))) {
+   cases.new <- c(data_cases[[i]]$Cases.Total[1], diff(data_cases[[i]]$Cases.Total))
+   data_cases[[i]] <- add_column(data_cases[[i]], Cases.New=cases.new)
+}
 
-# plot example
-# ggplot(data=data_cases[data_cases$Country.Region=="Switzerland",], 
-#        aes(x=c(1:nrow(ch)), y=Cases)) +
-#    geom_line()
+# save output to disk
+save(data_countries, data_cases, file = "./data/data_cleaned.RData")
 
 # clean up main memory
-rm(list=setdiff(ls(), c("data_cleaned")))
+rm(list=setdiff(ls(), c("data_cases", "data_countries")))

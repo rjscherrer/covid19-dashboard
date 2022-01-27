@@ -1,0 +1,251 @@
+﻿Country.Region,ISO
+Algeria,DZA
+Egypt,EGY
+Libya,LBY
+Morocco,MAR
+Sudan,SDN
+Tunisia,TUN
+Western Sahara,ESH
+British Indian Ocean Territory,IOT
+Burundi,BDI
+Comoros,COM
+Djibouti,DJI
+Eritrea,ERI
+Ethiopia,ETH
+French Southern Territories,ATF
+Kenya,KEN
+Madagascar,MDG
+Malawi,MWI
+Mauritius,MUS
+Mayotte,MYT
+Mozambique,MOZ
+Réunion,REU
+Rwanda,RWA
+Seychelles,SYC
+Somalia,SOM
+South Sudan,SSD
+Uganda,UGA
+United Republic of Tanzania,TZA
+Zambia,ZMB
+Zimbabwe,ZWE
+Angola,AGO
+Cameroon,CMR
+Central African Republic,CAF
+Chad,TCD
+Congo,COG
+Democratic Republic of the Congo,COD
+Equatorial Guinea,GNQ
+Gabon,GAB
+Sao Tome and Principe,STP
+Botswana,BWA
+Eswatini,SWZ
+Lesotho,LSO
+Namibia,NAM
+South Africa,ZAF
+Benin,BEN
+Burkina Faso,BFA
+Cabo Verde,CPV
+Côte d’Ivoire,CIV
+Gambia,GMB
+Ghana,GHA
+Guinea,GIN
+Guinea-Bissau,GNB
+Liberia,LBR
+Mali,MLI
+Mauritania,MRT
+Niger,NER
+Nigeria,NGA
+Saint Helena,SHN
+Senegal,SEN
+Sierra Leone,SLE
+Togo,TGO
+Anguilla,AIA
+Antigua and Barbuda,ATG
+Aruba,ABW
+Bahamas,BHS
+Barbados,BRB
+Bonaire,BQ
+British Virgin Islands,VGB
+Cayman Islands,CYM
+Cuba,CUB
+Curaçao,CUW
+Dominica,DMA
+Dominican Republic,DOM
+Grenada,GRD
+Guadeloupe,GLP
+Haiti,HTI
+Jamaica,JAM
+Martinique,MTQ
+Montserrat,MSR
+Puerto Rico,PRI
+Saint Barthélemy,BLM
+Saint Kitts and Nevis,KNA
+Saint Lucia,LCA
+Saint Martin (French Part),MAF
+Saint Vincent and the Grenadines,VCT
+Sint Maarten (Dutch part),SXM
+Trinidad and Tobago,TTO
+Turks and Caicos Islands,TCA
+United States Virgin Islands,VIR
+Belize,BLZ
+Costa Rica,CRI
+El Salvador,SLV
+Guatemala,GTM
+Honduras,HND
+Mexico,MEX
+Nicaragua,NIC
+Panama,PAN
+Argentina,ARG
+Bolivia (Plurinational State of),BOL
+Bouvet Island,BVT
+Brazil,BRA
+Chile,CHL
+Colombia,COL
+Ecuador,ECU
+Falkland Islands (Malvinas),FLK
+French Guiana,GUF
+Guyana,GUY
+Paraguay,PRY
+Peru,PER
+South Georgia and the South Sandwich Islands,SGS
+Suriname,SUR
+Uruguay,URY
+Venezuela (Bolivarian Republic of),VEN
+Bermuda,BMU
+Canada,CAN
+Greenland,GRL
+Saint Pierre and Miquelon,SPM
+United States of America,USA
+Antarctica,ATA
+Kazakhstan,KAZ
+Kyrgyzstan,KGZ
+Tajikistan,TJK
+Turkmenistan,TKM
+Uzbekistan,UZB
+China,CHN
+China,HK
+China,MO
+Democratic People's Republic of Korea,PRK
+Japan,JPN
+Mongolia,MNG
+Republic of Korea,KOR
+Brunei Darussalam,BRN
+Cambodia,KHM
+Indonesia,IDN
+Lao People's Democratic Republic,LAO
+Malaysia,MYS
+Myanmar,MMR
+Philippines,PHL
+Singapore,SGP
+Thailand,THA
+Timor-Leste,TLS
+Viet Nam,VNM
+Afghanistan,AFG
+Bangladesh,BGD
+Bhutan,BTN
+India,IND
+Iran (Islamic Republic of),IRN
+Maldives,MDV
+Nepal,NPL
+Pakistan,PAK
+Sri Lanka,LKA
+Armenia,ARM
+Azerbaijan,AZE
+Bahrain,BHR
+Cyprus,CYP
+Georgia,GEO
+Iraq,IRQ
+Israel,ISR
+Jordan,JOR
+Kuwait,KWT
+Lebanon,LBN
+Oman,OMN
+Qatar,QAT
+Saudi Arabia,SAU
+State of Palestine,PSE
+Syrian Arab Republic,SYR
+Turkey,TUR
+United Arab Emirates,ARE
+Yemen,YEM
+Belarus,BLR
+Bulgaria,BGR
+Czechia,CZE
+Hungary,HUN
+Poland,POL
+Moldova,MDA
+Romania,ROU
+Russia,RUS
+Slovakia,SVK
+Ukraine,UKR
+Åland Islands,ALA
+Guernsey,GGY
+Jersey,JEY
+Sark,
+Denmark,DNK
+Estonia,EST
+Faroe Islands,FRO
+Finland,FIN
+Iceland,ISL
+Ireland,IRL
+Isle of Man,IMN
+Latvia,LVA
+Lithuania,LTU
+Norway,NOR
+Svalbard and Jan Mayen Islands,SJM
+Sweden,SWE
+United Kingdom,GBR
+Albania,ALB
+Andorra,AND
+Bosnia and Herzegovina,BIH
+Croatia,HRV
+Gibraltar,GIB
+Greece,GRC
+Holy See,VAT
+Italy,ITA
+Malta,MLT
+Montenegro,MNE
+North Macedonia,MKD
+Portugal,PRT
+San Marino,SMR
+Serbia,SRB
+Slovenia,SVN
+Spain,ESP
+Austria,AUT
+Belgium,BEL
+France,FRA
+Germany,DEU
+Liechtenstein,LIE
+Luxembourg,LUX
+Monaco,MCO
+Netherlands,NLD
+Switzerland,CHE
+Australia,AUS
+Christmas Island,CXR
+Cocos (Keeling) Islands,CCK
+Heard Island and McDonald Islands,HMD
+New Zealand,NZL
+Norfolk Island,NFK
+Fiji,FJI
+New Caledonia,NCL
+Papua New Guinea,PNG
+Solomon Islands,SLB
+Vanuatu,VUT
+Guam,GUM
+Kiribati,KIR
+Marshall Islands,MHL
+Micronesia (Federated States of),FSM
+Nauru,NRU
+Northern Mariana Islands,MNP
+Palau,PLW
+United States Minor Outlying Islands,UMI
+American Samoa,ASM
+Cook Islands,COK
+French Polynesia,PYF
+Niue,NIU
+Pitcairn,PCN
+Samoa,WSM
+Tokelau,TKL
+Tonga,TON
+Tuvalu,TUV
+Wallis and Futuna Islands,WLF
+Kosovo,KOS

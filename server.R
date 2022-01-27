@@ -1,5 +1,6 @@
 library(geojsonio)
 library(ggmap)
+library(dplyr)
 
 # EXTERNAL SOURCES
 source('scripts/boost_script.R', local = TRUE)
@@ -20,11 +21,17 @@ shinyServer(
       # })
       
       reactive_db_confirmed = reactive({
-         confirmed_cases_at_date <- data_ts_confirmed_global[c("Province/State", "Country/Region", "Lat", "Long", format(as.Date(as.numeric(input$dv_plot_date), origin = '1970-01-01'), '%d.%m.%Y'))]
-         colnames(confirmed_cases_at_date) <- c("Province/State", "Country/Region", "Lat", "Long", "confirmed_cases")
+         cases_total_at_date <- data_combined %>% 
+            dplyr::filter(Country.Region != "Europe",
+                          Date == as.Date(as.numeric(input$dv_plot_date), origin = '1970-01-01'),
+                          Cases.Total > 0) %>%
+            merge(., data_countries, by = "Country.Region")
          
-         confirmed_cases_at_date %>%
-            filter(confirmed_cases > 0)
+         #confirmed_cases_at_date <- data_ts_confirmed_global[c("Province/State", "Country/Region", "Lat", "Long", format(as.Date(as.numeric(input$dv_plot_date), origin = '1970-01-01'), '%d.%m.%Y'))]
+         #colnames(confirmed_cases_at_date) <- c("Province/State", "Country/Region", "Lat", "Long", "confirmed_cases")
+         
+         #confirmed_cases_at_date %>%
+         #   filter(confirmed_cases > 0)
       })
       
       output$ccg_download <- downloadHandler(
@@ -89,109 +96,124 @@ shinyServer(
                zoomControl = FALSE
             )
          ) %>%
-            setView(lng = 70, lat = 55, zoom = 3) %>%
+            setView(lng = 70, lat = 55, zoom = 4) %>%
                addProviderTiles(providers$CartoDB.Positron)
       })
       
       observeEvent(
          input$dv_plot_date, {
-            if(input$dv_plot_date <= as.Date("15.04.2020", format='%d.%m.%Y')) {
-               leafletProxy("dv_map") %>%
-                  clearMarkers() %>%
-                  addMapPane("markers", zIndex = 500) %>%
-                  addCircleMarkers(
-                     data = reactive_db_confirmed(), lat = ~ Lat, lng = ~ Long, weight = 1, 
-                     radius = ~(confirmed_cases)^(1/5), 
-                     fillOpacity = 0.1, color = marker_col, group = "Confirmed Cases",
-                     label = sprintf("<strong>%s</strong><br/>Confirmed Cases: %s", reactive_db_confirmed()$`Country/Region`, format(reactive_db_confirmed()$confirmed_cases, big.mark="'")) %>% lapply(htmltools::HTML),
-                     labelOptions = labelOptions(
-                        style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
-                        textsize = "15px", direction = "auto"
-                     ),
-                     options = pathOptions(pane = "markers")
-                  )
-               # updateSliderInput(session, "dp_pred_time", value = 0)
-            } else {
-               date_diff <- as.numeric(input$dv_plot_date - as.Date("15.04.2020", format="%d.%m.%Y"))
-               prediction <- predict_randomForest(model_RF, rf_data, date_diff)
-               
-               data_conf_tmp <- data_ts_confirmed_global %>% distinct(`Country/Region`, .keep_all = TRUE)
-               prediction$lat <- merge(prediction, data_conf_tmp, by = "Country/Region")$Lat
-               prediction$long <- merge(prediction, data_conf_tmp, by = "Country/Region")$Long
-               prediction$case_number <- merge(prediction, data_conf_tmp, by = "Country/Region")$`15.04.2020`
-               
-               for (z in c(0:(date_diff-1))) {
-                  for (i in c(1:nrow(prediction))) {
-                     prediction[i,]$case_number <- prediction[i,]$case_number * (1 + prediction[i,15+date_diff-z])[1,]
-                  }  
-               }
-
-               leafletProxy("dv_map") %>%
-                  clearMarkers() %>%
-                  addMapPane("markers", zIndex = 500) %>%
-                  addCircleMarkers(
-                     data = prediction, lat = ~ lat, lng = ~ long, weight = 1,
-                     radius = ~(case_number)^(1/5),
-                     fillOpacity = 0.1, color = marker_col, group = "Confirmed Cases",
-                     label = sprintf("<strong>%s</strong><br/>Confirmed Cases: %s", prediction$`Country/Region`, format(round(prediction$case_number, digits = 0), big.mark="'")) %>% lapply(htmltools::HTML),
-                     labelOptions = labelOptions(
-                        style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
-                        textsize = "15px", direction = "auto"
-                     ),
-                     options = pathOptions(pane = "markers")
-                  )
-               
-                  # updateSliderInput(session, "dp_pred_time", value = date_diff)
-            }
-         }
-      )
-      
-      observeEvent(
-         input$dp_pred_model, {
             leafletProxy("dv_map") %>%
-               removeShape(data_rf$`Country/Region`) %>%
-               clearControls()
-            
-            switch (input$dp_pred_model,
-               "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
-               "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
+            clearMarkers() %>%
+            addMapPane("markers", zIndex = 500) %>%
+            addCircleMarkers(
+               data = reactive_db_confirmed(), lat = ~ Lat, lng = ~ Long, weight = 1, 
+                  radius = ~(Cases.Total)^(1/5), 
+                  fillOpacity = 0.1, color = marker_col, group = "Total Cases",
+                  label = sprintf("<strong>%s</strong><br/>Total Cases: %s", reactive_db_confirmed()$`Country.Region`, format(reactive_db_confirmed()$Cases.Total, big.mark="'")) %>% lapply(htmltools::HTML),
+                  labelOptions = labelOptions(
+                     style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
+                     textsize = "15px", direction = "auto"
+                  ),
+                  options = pathOptions(pane = "markers")
             )
             
-            if(input$dp_pred_time > 0) {
-               update_polygon(prediction = prediction)
-            }
-         }
-      )
-      
-      observeEvent(
-         input$dp_pred_time, {
-            leafletProxy("dv_map") %>%
-               removeShape(data_rf$`Country/Region`) %>%
-               clearControls()
-            
-            switch (input$dp_pred_model,
-               "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
-               "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
-            )
-            
-            if(input$dp_pred_time > 0) {
-               update_polygon(prediction = prediction)
-            } else if(first_run == 1) {
+            if(first_run == 1) {
                leafletProxy("dv_map") %>%
                   addMapPane("polygons", zIndex = 400) %>%
                   addPolygons(
-                     data = country_polygon_shapes[!(country_polygon_shapes$ADM0_A3 %in% prediction$country_code), ],
-                     stroke = FALSE, 
-                     smoothFactor = 0.1, 
-                     fillOpacity = 0.6, 
+                     data = country_polygon_shapes[!(country_polygon_shapes$ADM0_A3 %in% data_countries$ISO), ],
+                     stroke = FALSE,
+                     smoothFactor = 0.1,
+                     fillOpacity = 0.6,
                      fillColor = dummy_country_col,
                      options = pathOptions(pane = "polygons")
                   )
-               
+
                first_run <<- 0
             }
+            
+               # updateSliderInput(session, "dp_pred_time", value = 0)
+            #} else {
+               # date_diff <- as.numeric(input$dv_plot_date - as.Date("15.04.2020", format="%d.%m.%Y"))
+               # prediction <- predict_randomForest(model_RF, rf_data, date_diff)
+               # 
+               # data_conf_tmp <- data_ts_confirmed_global %>% distinct(`Country/Region`, .keep_all = TRUE)
+               # prediction$lat <- merge(prediction, data_conf_tmp, by = "Country/Region")$Lat
+               # prediction$long <- merge(prediction, data_conf_tmp, by = "Country/Region")$Long
+               # prediction$case_number <- merge(prediction, data_conf_tmp, by = "Country/Region")$`15.04.2020`
+               # 
+               # for (z in c(0:(date_diff-1))) {
+               #    for (i in c(1:nrow(prediction))) {
+               #       prediction[i,]$case_number <- prediction[i,]$case_number * (1 + prediction[i,15+date_diff-z])[1,]
+               #    }  
+               # }
+               # 
+               # leafletProxy("dv_map") %>%
+               #    clearMarkers() %>%
+               #    addMapPane("markers", zIndex = 500) %>%
+               #    addCircleMarkers(
+               #       data = prediction, lat = ~ lat, lng = ~ long, weight = 1,
+               #       radius = ~(case_number)^(1/5),
+               #       fillOpacity = 0.1, color = marker_col, group = "Confirmed Cases",
+               #       label = sprintf("<strong>%s</strong><br/>Confirmed Cases: %s", prediction$`Country/Region`, format(round(prediction$case_number, digits = 0), big.mark="'")) %>% lapply(htmltools::HTML),
+               #       labelOptions = labelOptions(
+               #          style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
+               #          textsize = "15px", direction = "auto"
+               #       ),
+               #       options = pathOptions(pane = "markers")
+               #    )
+               # 
+               #    # updateSliderInput(session, "dp_pred_time", value = date_diff)
+            #}
          }
       )
+      
+      #observeEvent(
+         # input$dp_pred_model, {
+         #    leafletProxy("dv_map") %>%
+         #       removeShape(data_rf$`Country/Region`) %>%
+         #       clearControls()
+         #    
+         #    switch (input$dp_pred_model,
+         #       "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
+         #       "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
+         #    )
+         #    
+         #    if(input$dp_pred_time > 0) {
+         #       update_polygon(prediction = prediction)
+         #    }
+         # }
+      #)
+      
+      #observeEvent(
+         # input$dp_pred_time, {
+         #    leafletProxy("dv_map") %>%
+         #       removeShape(data_rf$`Country/Region`) %>%
+         #       clearControls()
+         #    
+         #    switch (input$dp_pred_model,
+         #       "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
+         #       "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
+         #    )
+         #    
+         #    if(input$dp_pred_time > 0) {
+         #       update_polygon(prediction = prediction)
+         #    } else if(first_run == 1) {
+         #       leafletProxy("dv_map") %>%
+         #          addMapPane("polygons", zIndex = 400) %>%
+         #          addPolygons(
+         #             data = country_polygon_shapes[!(country_polygon_shapes$ADM0_A3 %in% prediction$country_code), ],
+         #             stroke = FALSE, 
+         #             smoothFactor = 0.1, 
+         #             fillOpacity = 0.6, 
+         #             fillColor = dummy_country_col,
+         #             options = pathOptions(pane = "polygons")
+         #          )
+         #       
+         #       first_run <<- 0
+         #    }
+         # }
+      #)
       
       update_polygon <- function(prediction) {
          prediction <- prediction[order(prediction$country_code),]

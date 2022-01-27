@@ -5,8 +5,13 @@ library(RColorBrewer)
 library(dplyr)
 library(readxl)
 library(shinyWidgets)
+library(tidyverse)
 
 # EXTERNAL SOURCES
+data_countries <<- readRDS(file = "./data/data_countries.RDS")
+data_cases <<- readRDS(file = "./data/data_cases.RDS")
+data_combined <<- map_dfr(data_cases, bind_rows)
+
 data_ts_confirmed_global <<- read_excel(path = "data/time_series_covid19_confirmed_global.xlsx", col_names = TRUE, na = "NA") %>%
    setNames(., c('Province/State', 'Country/Region', 'Lat', 'Long', format(as.Date(as.numeric(names(.)[-c(1:4)]), origin = '1899-12-30'), '%d.%m.%Y')))
 data_boosting <<- read_excel("data/boost_data.xlsx")
@@ -34,27 +39,27 @@ shinyUI(
                
                sliderInput(
                   "dv_plot_date",
-                  label = h5(HTML("<br/><b>Number of Cases</b><br/>(RF after 15.04.2020)")),
-                  min = min(as.Date(names(data_ts_confirmed_global)[-c(1:4)], format='%d.%m.%Y')),
-                  max = max(as.Date(names(data_ts_confirmed_global)[-c(1:4)], format='%d.%m.%Y')) + 15,
-                  value = max(as.Date(names(data_ts_confirmed_global)[-c(1:4)], format='%d.%m.%Y')),
+                  label = h5(HTML("<br/><b>Total Number of Cases</b>")),
+                  min = min(data_combined$Date),
+                  max = max(data_combined$Date),
+                  value = max(data_combined$Date),
                   timeFormat = '%d.%m.%Y'
-               ),
-               
-               pickerInput(
-                  inputId = 'dp_pred_model',
-                  label = HTML("<b>Prediction Model</b>"),
-                  choices = c("Random Forest", "Boosting"),
-                  options = list(`style` = "btn-info")
-               ),
-               
-               sliderInput(
-                  "dp_pred_time",
-                  label = h5(HTML("<b>Growth Rate</b><br/>(Days after 15.04.2020)")),
-                  min = 0,
-                  max = 15,
-                  value = 0
                )
+               
+               # pickerInput(
+               #  inputId = 'dp_pred_model',
+               #  label = HTML("<b>Prediction Model</b>"),
+               #  choices = c("Random Forest", "Boosting"),
+               #  options = list(`style` = "btn-info")
+               # ),
+               # 
+               # sliderInput(
+               #    "dp_pred_time",
+               #    label = h5(HTML("<b>Growth Rate</b><br/>(Days after 15.04.2020)")),
+               #    min = 0,
+               #    max = 15,
+               #    value = 0
+               # )
             )
          )
       ),
