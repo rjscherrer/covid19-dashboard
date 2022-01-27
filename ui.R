@@ -48,7 +48,7 @@ shinyUI(
          "Time Series",
          div(class = "buffer"),
          
-         selectInput("ts_type", "Select Time Series Type:",
+         selectInput("ts_type", "Select Time Series:",
                      list("Cases.Total", 
                           "Cases.New", 
                           "Cases.New.NoLag", 

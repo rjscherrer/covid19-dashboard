@@ -2,9 +2,6 @@ library(geojsonio)
 library(ggmap)
 library(dplyr)
 
-source('scripts/boost_script.R', local = TRUE)
-source('scripts/rf_script.R', local = TRUE)
-
 country_polygon_shapes <- geojson_read("data/50m.geojson", what = "sp")
 
 marker_col <- "#0000FF"
@@ -47,9 +44,10 @@ shinyServer(
             type = 'scatter',
             mode = 'lines'
          ) %>%
-            layout(title = "Cases.Total, Albania",
+            layout(title = "<b>Cases.Total, Albania</b>",
                    xaxis = list(title = "Date"),
-                   textfont= list(size = 28)) %>%
+                   titlefont = list(size = 18),
+                   margin = list(l=50, r=50, t=50, b=50)) %>%
             add_trace(name = "Exponential Growth",
                       x = unique(data_combined$Date), 
                       y = data_combined[data_combined$Country.Region=="Albania",]$Cases.Total %>%
@@ -66,7 +64,7 @@ shinyServer(
       observeEvent(
          input$ts_type, {
             plotly::plotlyProxy(outputId = "ts_output") %>%
-               plotlyProxyInvoke("relayout", list(title = paste0(input$ts_type, ", ", input$ts_country))) %>%
+               plotlyProxyInvoke("relayout", list(title = paste0("<b>", input$ts_type, ", ", input$ts_country, "</b>"))) %>%
                plotlyProxyInvoke("deleteTraces", list(-1, -2)) %>%
                plotlyProxyInvoke("addTraces", list(name = "Exponential Growth",
                                                    x = unique(data_combined$Date), 
@@ -85,7 +83,7 @@ shinyServer(
       observeEvent(
          input$ts_country, {
             plotly::plotlyProxy(outputId = "ts_output") %>%
-               plotlyProxyInvoke("relayout", list(title = paste0(input$ts_type, ", ", input$ts_country))) %>%
+               plotlyProxyInvoke("relayout", list(title = paste0("<b>", input$ts_type, ", ", input$ts_country, "</b>"))) %>%
                plotlyProxyInvoke("deleteTraces", list(-1, -2)) %>%
                plotlyProxyInvoke("addTraces", list(name = "Exponential Growth",
                                                    x = unique(data_combined$Date), 
