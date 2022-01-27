@@ -2,85 +2,25 @@ library(geojsonio)
 library(ggmap)
 library(dplyr)
 
-# EXTERNAL SOURCES
 source('scripts/boost_script.R', local = TRUE)
 source('scripts/rf_script.R', local = TRUE)
 
 country_polygon_shapes <- geojson_read("data/50m.geojson", what = "sp")
 
-# STYLE SETTINGS
-marker_col <- "#DC143C"
+marker_col <- "#0000FF"
 dummy_country_col <- "#375a7f"
 
 shinyServer(
    function(input, output, session) {
       first_run <<- 1
       
-      # output$mytable = DT::renderDataTable({
-      #    DT::datatable(data_ts_confirmed_global, options = list(lengthMenu = c(5, 30, 50), pageWidth = 5))
-      # })
-      
       reactive_db_confirmed = reactive({
          cases_total_at_date <- data_combined %>% 
             dplyr::filter(Country.Region != "Europe",
                           Date == as.Date(as.numeric(input$dv_plot_date), origin = '1970-01-01'),
                           Cases.Total > 0) %>%
-            merge(., data_countries, by = "Country.Region")
-         
-         #confirmed_cases_at_date <- data_ts_confirmed_global[c("Province/State", "Country/Region", "Lat", "Long", format(as.Date(as.numeric(input$dv_plot_date), origin = '1970-01-01'), '%d.%m.%Y'))]
-         #colnames(confirmed_cases_at_date) <- c("Province/State", "Country/Region", "Lat", "Long", "confirmed_cases")
-         
-         #confirmed_cases_at_date %>%
-         #   filter(confirmed_cases > 0)
-      })
-      
-      output$ccg_download <- downloadHandler(
-         filename = function() {
-            "time_series_covid19_confirmed_global.xlsx"
-         },
-         content = function(file) {
-            write.xlsx(data_ts_confirmed_global, file)
-         }
-      )
-      
-      output$ccg_rawtable <- renderPrint({
-         orig <- options(width = 10000)
-         head(data_ts_confirmed_global, input$ccg_maxrows) %>% tbl_df %>% print(n=input$ccg_maxrows)
-         options(orig)
-      })
-      
-      output$bd_download <- downloadHandler(
-         filename = function() {
-            "boost_data.xlsx"
-         },
-         content = function(file) {
-            write.xlsx(data_boosting, file)
-         }
-      )
-      
-      output$bd_rawtable <- renderPrint({
-         orig <- options(width = 10000)
-         head(data_boosting, input$bd_maxrows) %>% tbl_df %>% print(n=input$bd_maxrows)
-         options(orig)
-      })
-      
-      output$rf_download <- downloadHandler(
-         filename = function() {
-            "rf_data.xlsx"
-         },
-         content = function(file) {
-            if(input$rf_pred_num > 0) {
-               write.xlsx(predict_randomForest(model_RF, rf_data, input$rf_pred_num), file)
-            } else {
-               write.xlsx(data_rf, file)  
-            }
-         }
-      )
-      
-      output$rf_rawtable <- renderPrint({
-         orig <- options(width = 10000)
-         head(data_rf, input$rf_maxrows) %>% tbl_df %>% print(n=input$rf_maxrows)
-         options(orig)
+            merge(., data_countries, by = "Country.Region") %>%
+            .[order(.$ISO),]
       })
       
       output$dv_map <- renderLeaflet({
@@ -99,6 +39,67 @@ shinyServer(
             setView(lng = 70, lat = 55, zoom = 4) %>%
                addProviderTiles(providers$CartoDB.Positron)
       })
+      
+      output$ts_output <- renderPlotly(
+         plot_ly(
+            width = 1100,
+            height = 600,
+            type = 'scatter',
+            mode = 'lines'
+         ) %>%
+            layout(title = "Cases.Total, Albania",
+                   xaxis = list(title = "Date"),
+                   textfont= list(size = 28)) %>%
+            add_trace(name = "Exponential Growth",
+                      x = unique(data_combined$Date), 
+                      y = data_combined[data_combined$Country.Region=="Albania",]$Cases.Total %>%
+                         replace(., data_combined[data_combined$Country.Region=="Albania",]$Rt.Most.Likely<=1, 0),
+                      fill = "tozeroy",
+                      line = list(color="hsla(0, 100%, 50%, 0.5)"),
+                      fillcolor="hsla(0, 100%, 50%, 0.5)") %>%
+            add_trace(name = "Cases.Total",
+                      x = unique(data_combined$Date), 
+                      y = data_combined[data_combined$Country.Region=="Albania",]$Cases.Total,
+                      line = list(color="#0000FF"))
+      )
+      
+      observeEvent(
+         input$ts_type, {
+            plotly::plotlyProxy(outputId = "ts_output") %>%
+               plotlyProxyInvoke("relayout", list(title = paste0(input$ts_type, ", ", input$ts_country))) %>%
+               plotlyProxyInvoke("deleteTraces", list(-1, -2)) %>%
+               plotlyProxyInvoke("addTraces", list(name = "Exponential Growth",
+                                                   x = unique(data_combined$Date), 
+                                                   y = data_combined[data_combined$Country.Region==input$ts_country,][[input$ts_type]] %>%
+                                                      replace(., data_combined[data_combined$Country.Region==input$ts_country,]$Rt.Most.Likely<=1, 0),
+                                                   fill = "tozeroy",
+                                                   line = list(color="hsla(0, 100%, 50%, 0.5)"),
+                                                   fillcolor="hsla(0, 100%, 50%, 0.5)")) %>%
+               plotlyProxyInvoke("addTraces", list(name = input$ts_type,
+                                                   x = unique(data_combined$Date), 
+                                                   y = data_combined[data_combined$Country.Region==input$ts_country,][[input$ts_type]],
+                                                   line = list(color="#0000FF")))
+         }
+      )
+      
+      observeEvent(
+         input$ts_country, {
+            plotly::plotlyProxy(outputId = "ts_output") %>%
+               plotlyProxyInvoke("relayout", list(title = paste0(input$ts_type, ", ", input$ts_country))) %>%
+               plotlyProxyInvoke("deleteTraces", list(-1, -2)) %>%
+               plotlyProxyInvoke("addTraces", list(name = "Exponential Growth",
+                                                   x = unique(data_combined$Date), 
+                                                   y = data_combined[data_combined$Country.Region==input$ts_country,][[input$ts_type]] %>%
+                                                      replace(., data_combined[data_combined$Country.Region==input$ts_country,]$Rt.Most.Likely<=1, 0),
+                                                   fill = "tozeroy",
+                                                   line = list(color="hsla(0, 100%, 50%, 0.5)"),
+                                                   fillcolor="hsla(0, 100%, 50%, 0.5)")) %>%
+               plotlyProxyInvoke("addTraces", list(name = input$ts_type,
+                                                   x = unique(data_combined$Date), 
+                                                   y = data_combined[data_combined$Country.Region==input$ts_country,][[input$ts_type]],
+                                                   line = list(color="#0000FF")))
+         }
+      )
       
       observeEvent(
          input$dv_plot_date, {
@@ -132,127 +133,34 @@ shinyServer(
                first_run <<- 0
             }
             
-               # updateSliderInput(session, "dp_pred_time", value = 0)
-            #} else {
-               # date_diff <- as.numeric(input$dv_plot_date - as.Date("15.04.2020", format="%d.%m.%Y"))
-               # prediction <- predict_randomForest(model_RF, rf_data, date_diff)
-               # 
-               # data_conf_tmp <- data_ts_confirmed_global %>% distinct(`Country/Region`, .keep_all = TRUE)
-               # prediction$lat <- merge(prediction, data_conf_tmp, by = "Country/Region")$Lat
-               # prediction$long <- merge(prediction, data_conf_tmp, by = "Country/Region")$Long
-               # prediction$case_number <- merge(prediction, data_conf_tmp, by = "Country/Region")$`15.04.2020`
-               # 
-               # for (z in c(0:(date_diff-1))) {
-               #    for (i in c(1:nrow(prediction))) {
-               #       prediction[i,]$case_number <- prediction[i,]$case_number * (1 + prediction[i,15+date_diff-z])[1,]
-               #    }  
-               # }
-               # 
-               # leafletProxy("dv_map") %>%
-               #    clearMarkers() %>%
-               #    addMapPane("markers", zIndex = 500) %>%
-               #    addCircleMarkers(
-               #       data = prediction, lat = ~ lat, lng = ~ long, weight = 1,
-               #       radius = ~(case_number)^(1/5),
-               #       fillOpacity = 0.1, color = marker_col, group = "Confirmed Cases",
-               #       label = sprintf("<strong>%s</strong><br/>Confirmed Cases: %s", prediction$`Country/Region`, format(round(prediction$case_number, digits = 0), big.mark="'")) %>% lapply(htmltools::HTML),
-               #       labelOptions = labelOptions(
-               #          style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
-               #          textsize = "15px", direction = "auto"
-               #       ),
-               #       options = pathOptions(pane = "markers")
-               #    )
-               # 
-               #    # updateSliderInput(session, "dp_pred_time", value = date_diff)
-            #}
+            update_polygon()
          }
       )
       
-      #observeEvent(
-         # input$dp_pred_model, {
-         #    leafletProxy("dv_map") %>%
-         #       removeShape(data_rf$`Country/Region`) %>%
-         #       clearControls()
-         #    
-         #    switch (input$dp_pred_model,
-         #       "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
-         #       "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
-         #    )
-         #    
-         #    if(input$dp_pred_time > 0) {
-         #       update_polygon(prediction = prediction)
-         #    }
-         # }
-      #)
-      
-      #observeEvent(
-         # input$dp_pred_time, {
-         #    leafletProxy("dv_map") %>%
-         #       removeShape(data_rf$`Country/Region`) %>%
-         #       clearControls()
-         #    
-         #    switch (input$dp_pred_model,
-         #       "Boosting" = { prediction <- predict_boosting(boost, boost_data, input$dp_pred_time) },
-         #       "Random Forest" = { prediction <- predict_randomForest(model_RF, rf_data, input$dp_pred_time) }
-         #    )
-         #    
-         #    if(input$dp_pred_time > 0) {
-         #       update_polygon(prediction = prediction)
-         #    } else if(first_run == 1) {
-         #       leafletProxy("dv_map") %>%
-         #          addMapPane("polygons", zIndex = 400) %>%
-         #          addPolygons(
-         #             data = country_polygon_shapes[!(country_polygon_shapes$ADM0_A3 %in% prediction$country_code), ],
-         #             stroke = FALSE, 
-         #             smoothFactor = 0.1, 
-         #             fillOpacity = 0.6, 
-         #             fillColor = dummy_country_col,
-         #             options = pathOptions(pane = "polygons")
-         #          )
-         #       
-         #       first_run <<- 0
-         #    }
-         # }
-      #)
-      
-      update_polygon <- function(prediction) {
-         prediction <- prediction[order(prediction$country_code),]
-         prediction$T1 <- prediction$T1 * 100
+      update_polygon <- function() {
+         leafletProxy("dv_map") %>%
+            removeShape(reactive_db_confirmed()$Country.Region) %>%
+            clearControls()
          
-         # if(sum(prediction$T1 < 0) > 0) {
-         #    rc_neg <- colorRampPalette(colors = c("green", "white"), space = "Lab")(sum(prediction$T1 < 0))
-         #    rc_pos <- colorRampPalette(colors = c("white", "red"), space = "Lab")(sum(prediction$T1 > 0))
-         #    rampcols <- c(rc_neg, rc_pos)
-         # } else {
-         #    rc_pos <- colorRampPalette(colors = c("white", "red"), space = "Lab")(sum(prediction$T1))
-         #    rampcols <- c(rc_pos)
-         # }
-         
-         rc_neg <- colorRampPalette(colors = c("green", "white"), space = "Lab")(3)
-         rc_pos <- colorRampPalette(colors = c("white", "red"), space = "Lab")(nrow(prediction)-3)
-         rampcols <- c(rc_neg, rc_pos)
-         
-         polygon_colors <- colorNumeric(palette = rampcols, domain = prediction$T1)
+         pal <- colorFactor(
+            palette = c('green', 'red'),
+            domain = c(TRUE, FALSE)
+         )
          
          leafletProxy("dv_map") %>%
             addMapPane("polygons", zIndex = 400) %>%
             addPolygons(
-               data = country_polygon_shapes[country_polygon_shapes$ADM0_A3 %in% prediction$country_code, ],
+               data = country_polygon_shapes[country_polygon_shapes$ADM0_A3 %in% reactive_db_confirmed()$ISO, ],
                stroke = FALSE, smoothFactor = 0.1, 
                fillOpacity = 0.4, 
-               fillColor = polygon_colors(prediction$T1),
-               label = sprintf("<strong>%s</strong><br/>Growth Rate: %s&#37;", prediction$`Country/Region`, round(x = prediction$T1, digits = 2)) %>% lapply(htmltools::HTML),
+               fillColor = ~pal(reactive_db_confirmed()$Rt.Most.Likely > 1), #polygon_colors(reactive_db_confirmed()$Rt.Most.Likely),
+               label = sprintf("<strong>%s</strong><br/>Rt Most Likely: %s", reactive_db_confirmed()$Country.Region, round(x = reactive_db_confirmed()$Rt.Most.Likely, digits = 2)) %>% lapply(htmltools::HTML),
                labelOptions = labelOptions(
                   style = list("font-weight" = "normal", padding = "3px 8px", "color" = marker_col),
                   textsize = "15px", direction = "auto"
                ),
                options = pathOptions(pane = "polygons"),
-               layerId = prediction$`Country/Region`
-            ) %>%
-            addLegend(
-               position = "bottomleft", pal = polygon_colors, values = prediction$T1,
-               title = "Growth Rate <br/> <span style=\"font-weight: normal;\">(in %)</span>" %>% lapply(htmltools::HTML),
-               opacity = 1
+               layerId = reactive_db_confirmed()$Country.Region
             )
       }
    }
