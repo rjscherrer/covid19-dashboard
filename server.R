@@ -33,7 +33,7 @@ shinyServer(
                zoomControl = FALSE
             )
          ) %>%
-            setView(lng = 70, lat = 55, zoom = 4) %>%
+            setView(lng = 10.451526, lat = 51.16569, zoom = 4) %>%
                addProviderTiles(providers$CartoDB.Positron)
       })
       
@@ -101,12 +101,15 @@ shinyServer(
       
       observeEvent(
          input$dv_plot_date, {
+            radius <- reactive_db_confirmed()$Cases.Total %>% 
+               replace(., .>0, reactive_db_confirmed()$Cases.Total^(1/5))
+            
             leafletProxy("dv_map") %>%
             clearMarkers() %>%
             addMapPane("markers", zIndex = 500) %>%
             addCircleMarkers(
                data = reactive_db_confirmed(), lat = ~ Lat, lng = ~ Long, weight = 1, 
-                  radius = ~(Cases.Total)^(1/5), 
+                  radius = radius, 
                   fillOpacity = 0.1, color = marker_col, group = "Total Cases",
                   label = sprintf("<strong>%s</strong><br/>Total Cases: %s", reactive_db_confirmed()$`Country.Region`, format(reactive_db_confirmed()$Cases.Total, big.mark="'")) %>% lapply(htmltools::HTML),
                   labelOptions = labelOptions(

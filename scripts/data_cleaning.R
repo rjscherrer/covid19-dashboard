@@ -7,7 +7,7 @@ data_raw <- read.csv("./data/time_series_covid19_confirmed_global.csv")
 data_iso <- read.csv("./data/iso_codes.csv")
 
 # filter for european countries
-european_countries <- c("Russia", "Germany", "United Kingdom", "France", "Italy", 
+european_countries <- c("Germany", "United Kingdom", "France", "Italy", 
                         "Spain", "Ukraine", "Poland", "Romania", "Netherlands", 
                         "Belgium", "Czechia", "Greece", "Portugal", "Sweden", 
                         "Hungary", "Belarus", "Austria", "Serbia", "Switzerland",
@@ -41,6 +41,7 @@ data_cases <- data_cases[order(data_cases[,1]),]
 data_countries <- data_cases[, 1:3] %>%
    merge(., data_iso, by = "Country.Region", all.x = TRUE)
 
+# split data to list
 data_cases <- data_cases[, c(1,4:ncol(data_cases))] %>%
    tidyr::gather(key = "Date", value = "Cases.Total", -Country.Region) %>%
    dplyr::mutate(Date=as.Date(Date, format="X%m.%d.%y")) %>%

@@ -94,8 +94,13 @@ data_cases$Switzerland %>%
 #######################################################################################
 ts_smoothed <- function(time_series) {
    ts_smoothed <- round(smoother::smth(time_series, 
-                                       method = "gaussian", 
-                                       window = 7,
+                                       # weighting values according to a gaussian.
+                                       # near points are weighted higher than farther
+                                       # points
+                                       method = "gaussian",
+                                       # average over seven data points
+                                       window = 7, 
+                                       # include tails of the gaussian
                                        tails = TRUE), digits = 0)
    
    return(ts_smoothed)
@@ -128,15 +133,19 @@ data_cases$Switzerland %>%
 #> compute Rt.
 #######################################################################################
 R_T_MAX <- 12
+# genearting sequence of possible r values
 R_T_RANGE <-  seq(0, R_T_MAX, length = R_T_MAX*100 + 1)
 GAMMA <- 1/4
 
 add_likelihood <- function(cases) {
    likelihood <- cases %>%
-      #filter(Cases.New.Smoothed > 0) %>%
       mutate(
          r_t = list(R_T_RANGE),
+         # see equation slide 5, bullet point 3
          lambda = map(lag(Cases.New.Smoothed, 1), ~ .x * exp(GAMMA * (R_T_RANGE - 1))),
+         # see equation slide 5, bullet point 3
+         # computing log likelihoods instead of likelihoods for easier application of
+         # the rolling window approach proposed by (Systrom, 2020)
          likelihood_r_t = map2(Cases.New.Smoothed, lambda, dpois, log = TRUE)
       ) %>%
       slice(-1) %>%
@@ -162,10 +171,12 @@ add_posterior <- function(cases) {
       arrange(Date) %>%
       group_by(r_t) %>%
       mutate(posterior = exp(
+         # see equation on slide 6, bullet point 6 with m=7
          zoo::rollapplyr(likelihood_r_t, 7, sum, partial = TRUE)
       )) %>%
       group_by(Date) %>%
       mutate(posterior = posterior / sum(posterior, na.rm = TRUE)) %>%
+      # remove NA to prevent problems later on
       mutate(posterior = ifelse(is.nan(posterior), 0, posterior)) %>%
       ungroup() %>%
       select(-likelihood_r_t)
@@ -188,6 +199,7 @@ add_estimated_rt <- function(cases) {
       group_by(Country.Region, Date, Cases.Total, Cases.New, 
                Cases.New.NoLag, Cases.New.Smoothed) %>%
       summarize(
+         # see equation on slide 6, bullet point 4
          r_t_simulated = list(sample(R_T_RANGE, 
                                      10000, 
                                      replace = TRUE, 
